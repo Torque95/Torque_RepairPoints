@@ -1,0 +1,107 @@
+<div id="repairOverlay" style="
+    display: none;
+    position: fixed;
+    bottom: 18%;
+    right: 45%;
+    width: 240px;
+    background: rgba(18, 18, 18, 0.92);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-family: sans-serif;
+    color: #f0f0f0;
+    z-index: 9999;
+    backdrop-filter: blur(4px);
+">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="
+            width:32px;height:32px;
+            background:rgba(255,255,255,0.07);
+            border-radius:8px;
+            display:flex;align-items:center;justify-content:center;
+            flex-shrink:0;
+        ">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+        </div>
+        <div>
+            <p style="margin:0;font-size:14px;font-weight:500;">Repairing vehicle</p>
+            <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.45);">Do not exit the vehicle</p>
+        </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.08);border-radius:99px;height:5px;overflow:hidden;margin-bottom:10px;">
+        <div id="progressFill" style="height:100%;border-radius:99px;background:#4ade80;width:0%;transition:width 0.1s linear;"></div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,0.45);">
+            <span id="pulseDot" style="width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block;"></span>
+            In progress
+        </span>
+        <span id="pctLabel" style="font-size:12px;font-weight:500;">0%</span>
+    </div>
+
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:rgba(255,255,255,0.35);display:flex;align-items:center;gap:4px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            $1,000
+        </span>
+        <span id="paySource" style="font-size:11px;color:rgba(255,255,255,0.35);"></span>
+    </div>
+</div>
+
+<script>
+    const overlay  = document.getElementById('repairOverlay')
+    const fill     = document.getElementById('progressFill')
+    const pctLabel = document.getElementById('pctLabel')
+    const paySourceEl = document.getElementById('paySource')
+    const dot      = document.getElementById('pulseDot')
+
+    let progressInterval = null
+    let pulseInterval    = null
+    let pulseState       = true
+
+    function startProgress(duration) {
+        let elapsed = 0
+        const tick  = 80
+        progressInterval = setInterval(() => {
+            elapsed += tick
+            const pct = Math.min(100, Math.round((elapsed / duration) * 100))
+            fill.style.width     = pct + '%'
+            pctLabel.textContent = pct + '%'
+            if (pct >= 100) clearInterval(progressInterval)
+        }, tick)
+    }
+
+    function startPulse() {
+        pulseInterval = setInterval(() => {
+            pulseState = !pulseState
+            dot.style.opacity = pulseState ? '1' : '0.2'
+        }, 600)
+    }
+
+    function stopAll() {
+        clearInterval(progressInterval)
+        clearInterval(pulseInterval)
+        progressInterval     = null
+        pulseInterval        = null
+        fill.style.width     = '0%'
+        pctLabel.textContent = '0%'
+        overlay.style.display = 'none'
+    }
+
+    window.addEventListener('message', function(e) {
+        const data = e.data
+        if (data.action === 'startRepair') {
+            paySourceEl.textContent = data.paySource || ''
+            overlay.style.display   = 'block'
+            startProgress(data.duration || 8000)
+            startPulse()
+        }
+        if (data.action === 'stopRepair') {
+            stopAll()
+        }
+    })
+</script>
