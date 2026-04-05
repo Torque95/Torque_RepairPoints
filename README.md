@@ -1,6 +1,6 @@
 # Torque Repair Points
 
-A QBCore vehicle repair script with NUI overlay, xSound audio, and server-side payment validation.
+A QBCore vehicle repair script with NUI overlay, and server-side payment validation.
 
 ## Dependencies
 
