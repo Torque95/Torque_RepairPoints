@@ -1,5 +1,5 @@
 -- ==========================================
---  Custom Repair System — 
+--  Custom Repair System — Client
 -- ==========================================
 
 local repairPoints = {
@@ -12,7 +12,7 @@ local repairPoints = {
     { coords = vector3(216.3,    2609.34, 46.45),  label = "Harmony" },
     { coords = vector3(-77.0,    6430.3,  31.44),  label = "Paleto" },
     { coords = vector3(-73.06,  -1340.55, 28.26),  label = "Innocence Blvd" },
-    { coords = vector3(533.07,  -179.2,   54.39),  label = "Elgin Ave" },
+    { coords = vector3(533.07,  -179.2,   53.39),  label = "Elgin Ave" },
 }
 
 local REPAIR_COST     = 1000
@@ -20,7 +20,6 @@ local REPAIR_DURATION = 8000
 local DRAW_DISTANCE   = 30.0
 local INTERACT_RANGE  = 9.0
 local MARKER_HEIGHT   = 0.2
-local SOUND_NAME      = 'impact_wrench'  -- must match the name loaded in xsound
 
 local isRepairing     = false
 local uiVisible       = false
@@ -63,23 +62,12 @@ local function closeHood(vehicle)
     SetVehicleDoorShut(vehicle, 4, false)
 end
 
-local xSound = exports['xsound']
-
-local function startAudio()
-    xSound:PlayUrl(SOUND_NAME, 'https://cfx-nui-xsound/sounds/impact_wrench.ogg', 0.6, true)
-end
-
-local function stopAudio()
-    xSound:Destroy(SOUND_NAME)
-end
-
 local function startDrillingLoop()
     if drillingThread then return end
     drillingThread = CreateThread(function()
         while isRepairing do
             Wait(500)
         end
-        stopAudio()
         drillingThread = nil
     end)
 end
@@ -217,7 +205,6 @@ RegisterNetEvent('customRepair:startRepair', function(paySource)
     end
 
     openHood(vehicle)
-    startAudio()
     startDrillingLoop()
 
     SendNUIMessage({
@@ -226,7 +213,6 @@ RegisterNetEvent('customRepair:startRepair', function(paySource)
         paySource = paySource or '',
     })
 
-    -- Disable controls for the duration in a separate thread
     CreateThread(function()
         local elapsed = 0
         while elapsed < REPAIR_DURATION and isRepairing do
@@ -234,20 +220,16 @@ RegisterNetEvent('customRepair:startRepair', function(paySource)
             DisableControlAction(0, 31, true)   -- move up/down
             DisableControlAction(0, 21, true)   -- sprint
             DisableControlAction(0, 22, true)   -- jump
-            DisableControlAction(0, 24, true)   -- attack
-            DisableControlAction(0, 25, true)   -- aim
-            DisableControlAction(0, 71, true)   -- accelerate
-            DisableControlAction(0, 72, true)   -- brake
             DisableControlAction(0, 23, true)   -- exit vehicle (F)
-            DisableControlAction(0, 135, true)  -- seatbelt (B)
             DisableControlAction(0, 69, true)   -- vehicle attack (left mouse)
             DisableControlAction(0, 70, true)   -- vehicle attack 2 (right mouse)
             DisableControlAction(0, 92, true)   -- vehicle aim
-            DisableControlAction(27, 23, true)  -- exit vehicle on control group 27
-            DisableControlAction(1, 23, true)   -- exit vehicle on control group 1
-
-
-            elapsed = elapsed + 0
+            DisableControlAction(0, 71, true)   -- accelerate
+            DisableControlAction(0, 72, true)   -- brake
+            DisableControlAction(0, 135, true)  -- seatbelt / ragdoll (B)
+            DisableControlAction(27, 23, true)  -- exit vehicle group 27
+            DisableControlAction(1, 23, true)   -- exit vehicle group 1
+            elapsed = elapsed + GetFrameTime() * 1000
             Wait(0)
         end
     end)
